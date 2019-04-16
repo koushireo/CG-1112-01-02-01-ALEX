@@ -1,15 +1,31 @@
 #include "packet.h"
 #include "constants.h"
 #include "serialize.h"
-
-typedef enum
+#define left_const 1.2
+#define right_const 1
+#define straight 0.6
+#define turn 0.5
+typedef enum 
 {
   STOP=0,
   FORWARD=1,
-  BACKWARD=2,
+  BACKWARD=2, 
   LEFT=3,
   RIGHT=4
 } TDirection;
+
+#define S0 4
+#define S1 7
+#define S2 8
+#define S3 9
+#define sensorOut 12
+int frequency = 0;
+
+#define LED 13 // Use the onboard Uno LED
+#define isObstaclePinLeft A0 // This is our input pin
+#define isObstaclePinFront A1
+#define isObstaclePinRight A2
+
 
 volatile TDirection dir = STOP;
 /*
@@ -165,6 +181,30 @@ void sendBadResponse()
   sendResponse(&badResponse);
 }
 
+void sendObstacleLeft()
+{
+  TPacket Obstacle;
+  Obstacle.packetType = PACKET_TYPE_RESPONSE;
+  Obstacle.command = RESP_LEFT;
+  sendResponse(&Obstacle);
+}
+
+void sendObstacleFront()
+{
+  TPacket Obstacle;
+  Obstacle.packetType = PACKET_TYPE_RESPONSE;
+  Obstacle.command = RESP_FRONT;
+  sendResponse(&Obstacle);
+}
+
+void sendObstacleRight()
+{
+  TPacket Obstacle;
+  Obstacle.packetType = PACKET_TYPE_RESPONSE;
+  Obstacle.command = RESP_RIGHT;
+  sendResponse(&Obstacle);
+}
+
 void sendOK()
 {
   TPacket okPacket;
@@ -290,7 +330,7 @@ void startSerial()
 }
 
 // Read the serial port. Returns the read character in
-// ch if available. Also returns TRUE if ch is valid. 
+// ch if available. Also returns TRUE if ch is id. 
 // This will be replaced later with bare-metal code.
 
 int readSerial(char *buffer)
@@ -309,7 +349,7 @@ int readSerial(char *buffer)
 
 void writeSerial(const char *buffer, int len)
 {
-  Serial.write(buffer, len);
+  Serial.write((uint8_t*) buffer, len);
 }
 
 /*
@@ -377,8 +417,8 @@ void forward(float dist, float speed)
   // RF = Right forward pin, RR = Right reverse pin
   // This will be replaced later with bare-metal code.
   
-  analogWrite(LF, val);
-  analogWrite(RF, val);
+  analogWrite(LF, val * left_const * straight);
+  analogWrite(RF, val * right_const * straight);
   analogWrite(LR,0);
   analogWrite(RR, 0);
 }
@@ -406,8 +446,8 @@ void reverse(float dist, float speed)
   // LF = Left forward pin, LR = Left reverse pin
   // RF = Right forward pin, RR = Right reverse pin
   // This will be replaced later with bare-metal code.
-  analogWrite(LR, val);
-  analogWrite(RR, val);
+  analogWrite(LR, val * left_const * straight);
+  analogWrite(RR, val * right_const * straight);
   analogWrite(LF, 0);
   analogWrite(RF, 0);
 }
@@ -425,8 +465,8 @@ void left(float ang, float speed)
   // We will also replace this code with bare-metal later.
   // To turn left we reverse the left wheel and move
   // the right wheel forward.
-  analogWrite(LR, val);
-  analogWrite(RF, val);
+  analogWrite(LR, val * left_const * turn);
+  analogWrite(RF, val * right_const * turn);
   analogWrite(LF, 0);
   analogWrite(RR, 0);
 }
@@ -445,8 +485,8 @@ void right(float ang, float speed)
   // We will also replace this code with bare-metal later.
   // To turn right we reverse the right wheel and move
   // the left wheel forward.
-  analogWrite(RR, val);
-  analogWrite(LF, val);
+  analogWrite(RR, val * right_const * turn);
+  analogWrite(LF, val * left_const * turn);
   analogWrite(LR, 0);
   analogWrite(RF, 0);
 }
@@ -499,20 +539,68 @@ void handleCommand(TPacket *command)
   {
     // For movement commands, param[0] = distance, param[1] = speed.
     case COMMAND_FORWARD:
-        sendOK();
+        //if (digitalRead(A0)){
+        //  sendObstacleLeft();
+        //}
+        //else if (digitalRead(A1)){
+        //  sendObstacleFront();
+        //}
+        //else if (digitalRead(A2)){
+        //  sendObstacleRight();
+        //}
+        //else{
+        //  sendOK();
+        //}
+	sendOK();
         forward((float) command->params[0], (float) command->params[1]);
-      break;
+        break;
 
     case COMMAND_REVERSE:
-        sendOK();
+        //if (digitalRead(A0)){
+        //  sendObstacleLeft();
+        //}
+        //else if (digitalRead(A1)){
+        //  sendObstacleFront();
+        //}
+        //else if (digitalRead(A2)){
+        //  sendObstacleRight();
+        //}
+        //else{
+        //  sendOK();
+        //}
+	sendOK();
         reverse((float) command->params[0], (float) command->params[1]);
-      break;
+        break;
     case COMMAND_TURN_LEFT:
-        sendOK();
+        //if (digitalRead(A0)){
+        //  sendObstacleLeft();
+        //}
+        //else if (digitalRead(A1)){
+        // sendObstacleFront();
+        //}
+        //else if (digitalRead(A2)){
+        //  sendObstacleRight();
+        //}
+        //else{
+        //  sendOK();
+        //}
+	sendOK();
         left((float) command->params[0], (float) command->params[1]);
       break;
     case COMMAND_TURN_RIGHT:
-        sendOK();
+        //if (digitalRead(A0)){
+        //  sendObstacleLeft();
+        //}
+        //else if (digitalRead(A1)){
+        //  sendObstacleFront();
+        //}
+        //else if (digitalRead(A2)){
+        //  sendObstacleRight();
+        //}
+        //else{
+        //  sendOK();
+        //}
+	sendOK();
         right((float) command->params[0], (float) command->params[1]);
       break;
     case COMMAND_STOP:
@@ -520,8 +608,12 @@ void handleCommand(TPacket *command)
         stop_moving();
         break;
     case COMMAND_GET_STATS:
-        sendOK();
+        //sendOK();
         sendStatus();
+        break;
+    case COMMAND_COLORS:
+        //sendOK();
+        colorsense();
         break;
     case COMMAND_CLEAR_STATS:
         sendOK();
@@ -569,6 +661,52 @@ void waitForHello()
   } // !exit
 }
 
+void colorsense(){
+  digitalWrite(S2,LOW);
+  digitalWrite(S3,LOW);
+  digitalWrite(LED, HIGH);
+  // Reading the output frequency
+  frequency = pulseIn(sensorOut, LOW);
+  //Remaping the value of the frequency to the RGB Model of 0 to 255
+  //frequency = map(frequency, 4200,220,255,0);
+  // Printing the value on the serial monitor
+  //Serial.print("R= ");//printing name
+  //Serial.print(frequency);//printing RED color frequency
+  //Serial.print("  ");
+  delay(100);
+  int red = frequency;
+  // Setting Green filtered photodiodes to be read
+  digitalWrite(S2,HIGH);
+  digitalWrite(S3,HIGH);
+  // Reading the output frequency
+  frequency = pulseIn(sensorOut, LOW);
+  //Remaping the value of the frequency to the RGB Model of 0 to 255
+  //frequency = map(frequency, 4200,200,255,0);
+  // Printing the value on the serial monitor
+  //Serial.print("G= ");//printing name
+  //Serial.print(frequency);//printing RED color frequency
+  //Serial.print("  ");
+  int green = frequency;
+  delay(100);
+  // Setting Blue filtered photodiodes to be read
+  //digitalWrite(S2,LOW);
+  //digitalWrite(S3,HIGH);
+  // Reading the output frequency
+  frequency = pulseIn(sensorOut, LOW);
+  //Remaping the value of the frequency to the RGB Model of 0 to 255
+  //frequency = map(frequency, 1100,90,255,0);
+  // Printing the value on the serial monitor
+  //Serial.print("B= ");//printing name
+  //Serial.print(frequency);//printing RED color frequency
+  //Serial.println("  ");
+  int blue = frequency;
+  delay(100);
+
+  digitalWrite(LED, LOW);
+  if (red < green && red < blue)    sendMessage("Color Red\n");
+  else if( green < red && blue < red)  sendMessage("Color Green\n");
+  else  sendMessage("Color Unknown");
+}
 void setup() {
   // put your setup code here, to run once:
 
@@ -581,6 +719,25 @@ void setup() {
   enablePullups();
   initializeState();
   sei();
+  while(Serial.available() > 0) {
+    char t = Serial.read();
+  }
+  
+  pinMode(S0, OUTPUT);
+  pinMode(S1, OUTPUT);
+  pinMode(S2, OUTPUT);
+  pinMode(S3, OUTPUT);
+  pinMode(sensorOut, INPUT);
+  pinMode(LED, OUTPUT);
+  
+  pinMode(A0, INPUT);
+  pinMode(A1, INPUT);
+  pinMode(A2, INPUT);
+ // Setting frequency-scaling to 20%
+  digitalWrite(S0,HIGH);
+  digitalWrite(S1,LOW);
+  digitalWrite(LED, LOW);
+
 }
 
 void handlePacket(TPacket *packet)
@@ -615,41 +772,50 @@ void loop() {
 
 
  // put your main code here, to run repeatedly:
-  TPacket recvPacket; // This holds commands from the Pi
+ // if (!digitalRead(A0) && !digitalRead(A1) && !digitalRead(A2){
+    TPacket recvPacket; // This holds commands from the Pi
 
-  TResult result = readPacket(&recvPacket);
-  
-  if(result == PACKET_OK)
-    handlePacket(&recvPacket);
-  else
-    if(result == PACKET_BAD)
-    {
-      sendBadPacket();
-    }
+    TResult result = readPacket(&recvPacket);
+    if(result == PACKET_OK)
+      handlePacket(&recvPacket);
     else
-      if(result == PACKET_CHECKSUM_BAD)
+      if(result == PACKET_BAD)
       {
-        sendBadChecksum();
-      } 
-  if (deltaDist > 0){
-    if (dir == FORWARD){
-      if (forwardDist > newDist){
-        deltaDist = 0;
-        newDist = 0;
-        stop_moving();
+        sendBadPacket();
       }
-    }
-    else if (dir == BACKWARD){
-      if (reverseDist > newDist){
-        deltaDist = 0;
-        newDist = 0;
-        stop_moving();
-      }
-    }
-    else if (dir == STOP) {
-      newDist = 0;
-      deltaDist = 0;
-      stop_moving();
-    }
+      else
+        if(result == PACKET_CHECKSUM_BAD)
+        {
+          sendBadChecksum();
+        } 
+//    if (deltaDist > 0){
+//      if (dir == FORWARD){
+//        if (forwardDist > newDist){
+//          deltaDist = 0;
+//          newDist = 0;
+//          stop_moving();
+//        }
+//      }
+//      else if (dir == BACKWARD){
+//        if (reverseDist > newDist){
+//          deltaDist = 0;
+//          newDist = 0;
+//          stop_moving();
+//        }
+//      }
+//      else if (dir == STOP) {
+//        newDist = 0;
+//        deltaDist = 0;
+//        stop_moving();
+//      }
+//    }
+//  }
+//  else if (digitalRead(A0)){    
+//    sendObstacleLeft();
+//  }
+//  else if (digitalRead(A1)){
+//    sendObstacleFront();
+//  }
+//  else if (digitalRead(A2)){
+//    sendObstacleLRight();
   }
-}

@@ -1,0 +1,6 @@
+plink for linking ssh command:
+	system("plink -ssh pi@192.168.137.5 -pw raspberry ~/Desktop/CG1112_Project/w9s1/Alex_pi_v2.o");
+
+
+arduino from command line
+	https://playground.arduino.cc/OpenBSD/CLI/

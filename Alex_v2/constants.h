@@ -25,7 +25,13 @@ typedef enum
   RESP_BAD_PACKET = 2,
   RESP_BAD_CHECKSUM = 3,
   RESP_BAD_COMMAND = 4,
-  RESP_BAD_RESPONSE = 5 
+  RESP_BAD_RESPONSE = 5,
+  RESP_LEFT = 6,
+  RESP_FRONT = 7,
+  RESP_RIGHT = 8,
+  RED = 9,
+  GREEN = 10,
+  DUNNO = 11
 } TResponseType;
 
 
@@ -40,7 +46,8 @@ typedef enum
   COMMAND_TURN_RIGHT = 3,
   COMMAND_STOP = 4,
   COMMAND_GET_STATS = 5,
-  COMMAND_CLEAR_STATS = 6
+  COMMAND_CLEAR_STATS = 6,
+  COMMAND_COLORS = 7,
 } TCommandType;
 #endif
 
