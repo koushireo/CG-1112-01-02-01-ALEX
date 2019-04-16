@@ -703,7 +703,7 @@ void colorsense(){
   delay(100);
 
   digitalWrite(LED, LOW);
-  if (red < green && red < blue)    sendMessage("Color Red\n");
+  if (((green + 0.0f) / red > 1.3f) && red < blue)    sendMessage("Color Red\n");
   else if( green < red && blue < red)  sendMessage("Color Green\n");
   else  sendMessage("Color Unknown");
 }
