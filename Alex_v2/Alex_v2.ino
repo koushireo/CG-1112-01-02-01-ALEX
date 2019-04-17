@@ -1,7 +1,10 @@
 #include "packet.h"
 #include "constants.h"
 #include "serialize.h"
-#define left_const 1.2
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+#define left_const 1
 #define right_const 1
 #define straight 0.6
 #define turn 0.5
@@ -315,6 +318,10 @@ ISR(INT1_vect)
 // with bare-metal code.
 void setupSerial(){
   // To replace later with bare-metal.
+  //UBRR0H = 0B00000000;
+  //UBRR0L = 0B00001000;
+  //UCSR0C = 0B00000110;
+ // UCSR0A = 0B00000000;
   Serial.begin(57600);
 }
 
@@ -326,6 +333,7 @@ void startSerial()
 {
   // Empty for now. To be replaced with bare-metal code
   // later on.
+  //UCSR0B = 0B00011000;
   
 }
 
@@ -335,9 +343,12 @@ void startSerial()
 
 int readSerial(char *buffer)
 {
-
   int count=0;
+  /*while ((UCSR0A & 0B10000000) == 0);
 
+  while ((UCSR0A & 0B00100000) == 0) {
+    buffer[count++] = UDR0;
+  }*/
   while(Serial.available())
     buffer[count++] = Serial.read();
 
@@ -349,6 +360,10 @@ int readSerial(char *buffer)
 
 void writeSerial(const char *buffer, int len)
 {
+  /*for (int i = 0; i < len; i += 1) {
+  while (UCSR0A & 0B00100000 == 0);
+    UDR0 = buffer[i];
+  }*/
   Serial.write((uint8_t*) buffer, len);
 }
 
@@ -417,8 +432,8 @@ void forward(float dist, float speed)
   // RF = Right forward pin, RR = Right reverse pin
   // This will be replaced later with bare-metal code.
   
-  analogWrite(LF, val * left_const * straight);
-  analogWrite(RF, val * right_const * straight);
+  analogWrite(LF, val * left_const * straight * 1.0f);
+  analogWrite(RF, val * right_const * straight *1.1f);
   analogWrite(LR,0);
   analogWrite(RR, 0);
 }
@@ -533,74 +548,41 @@ void initializeState()
   clearCounters();
 }
 
+void detectObstacle(){
+	if (digitalRead(A0)){
+          sendObstacleLeft();
+        }
+        else if (digitalRead(A1)){
+          sendObstacleFront();
+        }
+        else if (digitalRead(A2)){
+          sendObstacleRight();
+        }
+        else{
+          sendOK();
+        }
+}
+
 void handleCommand(TPacket *command)
 {
   switch(command->command)
   {
     // For movement commands, param[0] = distance, param[1] = speed.
     case COMMAND_FORWARD:
-        //if (digitalRead(A0)){
-        //  sendObstacleLeft();
-        //}
-        //else if (digitalRead(A1)){
-        //  sendObstacleFront();
-        //}
-        //else if (digitalRead(A2)){
-        //  sendObstacleRight();
-        //}
-        //else{
-        //  sendOK();
-        //}
-	sendOK();
+	detectObstacle();
         forward((float) command->params[0], (float) command->params[1]);
         break;
 
     case COMMAND_REVERSE:
-        //if (digitalRead(A0)){
-        //  sendObstacleLeft();
-        //}
-        //else if (digitalRead(A1)){
-        //  sendObstacleFront();
-        //}
-        //else if (digitalRead(A2)){
-        //  sendObstacleRight();
-        //}
-        //else{
-        //  sendOK();
-        //}
-	sendOK();
+	detectObstacle();
         reverse((float) command->params[0], (float) command->params[1]);
         break;
     case COMMAND_TURN_LEFT:
-        //if (digitalRead(A0)){
-        //  sendObstacleLeft();
-        //}
-        //else if (digitalRead(A1)){
-        // sendObstacleFront();
-        //}
-        //else if (digitalRead(A2)){
-        //  sendObstacleRight();
-        //}
-        //else{
-        //  sendOK();
-        //}
-	sendOK();
+	detectObstacle();
         left((float) command->params[0], (float) command->params[1]);
       break;
     case COMMAND_TURN_RIGHT:
-        //if (digitalRead(A0)){
-        //  sendObstacleLeft();
-        //}
-        //else if (digitalRead(A1)){
-        //  sendObstacleFront();
-        //}
-        //else if (digitalRead(A2)){
-        //  sendObstacleRight();
-        //}
-        //else{
-        //  sendOK();
-        //}
-	sendOK();
+	detectObstacle();
         right((float) command->params[0], (float) command->params[1]);
       break;
     case COMMAND_STOP:
@@ -701,11 +683,23 @@ void colorsense(){
   //Serial.println("  ");
   int blue = frequency;
   delay(100);
-
   digitalWrite(LED, LOW);
+  
+  float redPos = 1.6f;
+  float greenPos = 1.0f;
+  float whitePos = 1.3f;
+  float colorPos = green * 1.0f / red;
+  float redDiff = abs(colorPos - redPos);
+  float greenDiff = abs(colorPos - greenPos);
+  float whiteDiff = abs(colorPos - whitePos);
+
+  if (redDiff < greenDiff && redDiff < whiteDiff)  sendMessage("Color: RED\n");
+  else if( greenDiff < whiteDiff)  sendMessage("Color: GREEN\n");
+  else  sendMessage("Color: DUNNO\n");
+ /* digitalWrite(LED, LOW);
   if (((green + 0.0f) / red > 1.3f) && red < blue)    sendMessage("Color Red\n");
   else if( green < red && blue < red)  sendMessage("Color Green\n");
-  else  sendMessage("Color Unknown");
+  else  sendMessage("Color Unknown");*/
 }
 void setup() {
   // put your setup code here, to run once:

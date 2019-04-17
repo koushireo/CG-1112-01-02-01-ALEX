@@ -175,6 +175,7 @@ void *receiveThread(void *p)
 			{
 				counter=0;
 				handlePacket(&packet);
+				//cout << "packet received\n";
 				serialReady = true;
 			}
 			else 

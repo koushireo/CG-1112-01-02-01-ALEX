@@ -70,8 +70,16 @@ void loop() {
   Serial.println("  ");
   int blue = frequency;
   delay(100);
+	
+  float redPos = 1.6f;
+  float greenPos = 1.0f;
+  float whitePos = 1.3f;
+  float colorPos = green * 1.0f / red;
+  float redDiff = abs(colorPos - redPos);
+  float greenDiff = abs(colorPos - greenPos);
+  float whiteDiff = abs(colorPos - whitePos);
 
-  if (red < green && red < blue)  Serial.println("RED\n");
-  else if( green < red && blue < red)  Serial.println("GREEN\n");
+  if (redDiff < greenDiff && redDiff < whiteDiff)  Serial.println("RED\n");
+  else if( greenDiff < whiteDiff)  Serial.println("GREEN\n");
   else  Serial.println("DUNNO\n");
 }
